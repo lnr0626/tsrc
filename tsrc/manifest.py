@@ -13,6 +13,7 @@ ManifestConfig = NewType('ManifestConfig', Dict[str, Any])
 RepoConfig = NewType('RepoConfig', Dict[str, Any])
 
 GitLabConfig = NewType('GitLabConfig', Dict[str, Any])
+GithubConfig = NewType('GithubConfig', Dict[str, Any])
 
 
 class RepoNotFound(tsrc.Error):
@@ -25,11 +26,13 @@ class Manifest():
         self._repos = list()  # type: List[tsrc.Repo]
         self.copyfiles = list()  # type: List[Tuple[str, str]]
         self.gitlab = None  # type: Optional[GitLabConfig]
+        self.github = None  # type: Optional[GithubConfig]
         self.group_list = None  # type:  Optional[tsrc.GroupList[str]]
 
     def load(self, config: ManifestConfig) -> None:
         self.copyfiles = list()
         self.gitlab = config.get("gitlab")
+        self.github = config.get("github")
         repos = config.get("repos") or list()
         for repo_config in repos:
             self._handle_repo(repo_config)
@@ -131,6 +134,7 @@ def validate_repo(data: Any) -> None:
 
 def load(manifest_path: Path) -> Manifest:
     gitlab_schema = {"url": str}
+    github_schema = {"url": str}
     repo_schema = schema.Use(validate_repo)
     group_schema = {
         "repos": [str],
@@ -139,6 +143,7 @@ def load(manifest_path: Path) -> Manifest:
     manifest_schema = schema.Schema({
         "repos": [repo_schema],
         schema.Optional("gitlab"): gitlab_schema,
+        schema.Optional("github"): github_schema,
         schema.Optional("groups"): {str: group_schema},
     })
     parsed = tsrc.parse_config(manifest_path, manifest_schema)
